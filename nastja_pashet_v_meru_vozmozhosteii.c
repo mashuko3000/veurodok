@@ -1,17 +1,20 @@
 /*WTF: 
 1)макросы нормально приплести
 2)избавиться от буфера и сразу выводить через fputs
-3)фришнуть в my_printf указатели 
-4)функцию num_len скопировать
-5)проверить работу функции Z(Zn)
+3)функцию num_len скопировать
+4)проверить работу функции Z(Zn)
+5)для to и TO щдна функция To
+
 */
 
-
+ 
 
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <ctype.h>
+#include <math.h>
 
 #define OSHIBKA "Ошибка выделения памяти"
 
@@ -19,36 +22,36 @@ char* int_to_str(int num);
 char* unsigned_int_to_str(unsigned int num);  
 char* float_to_str(float num); 
 char* double_to_str(double num);
-char* str_to_dynamic_str(char* str); //что это вообще
 char* num_to_base(int num, int i);
 char* Roman(int num);
-char* str_to_base(char* str, int num, int i);
-char* num_to_dumb(int num);
-char* unsig_to_dumb(unsigned int num);
+char** Z(unsigned int num);  
+char* convert_base(int num, int base, char size);    
+char* str_to_base(char* str, int base); 
+char* iu_to_dumb(unsigned int num, int type);  
 char* doub_to_dumb(double num);
 char* float_to_dumb(float num);
+int number_len(const int number);
 
 
 
 //буфер и буф индекс в основной, а изменяем в остальных
 void d(int num);
-void u(char* buffer, unsigned int num, int buf_ind);
-void f(char* buffer, float num, int buf_ind);
-void lf(char* buffer, double num, int buf_ind);
-void c(char* buffer, char c, int buf_ind);
-void s(char* buffer, char* str, int buf_ind);
-void o(char* buffer, int num, int buf_ind);
-void x(char* buffer, int num, int buf_ind);
-void X(char* buffer, int num, int buf_ind);
+void u(unsigned int num);
+void f(float num);
+void lf(double num);
+void c(char c);
+void s(char* str);
+void o(int num);
+void x(int num);
+void X(int num);
 
-void Ro(char* buffer, int num, int buf_ind);
-void Zr(char* buffer, unsigned int num, int buf_ind);
-void Cv(char* buffer, int num, int buf_ind);
-void CV(char* buffer, int num, int buf_ind);
-void to(char* buffer, char* str, int buf_ind);
-void TO(char* buffer, char* str, int buf_ind);
-void mi(char* buffer, int num, int buf_ind);
-void mu(char* buffer, unsigned int num, int buf_ind);
+void Ro(int num);
+void Zr(unsigned int num); 
+void Cv(int num, int base);  
+void CV(int num, int base); 
+void To(char* str, int base);
+void mi(int num);
+void mu(unsigned int num);
 void md(char* buffer, double num, int buf_ind);
 void mf(char* buffer, float num, int buf_ind);
 
@@ -60,23 +63,125 @@ void my_printf(const char* format, ...)
     va_list args;
     va_start(args, format);
 
-    const char* ptr = format;
+    for (int i = 0; format[i] != '\0'; i++) {
+        if (format[i] == '%') {
+            i++; // Переход к следующему символу после '%'
+            switch (format[i]) {
+            case 'd': {
+                d;
+                break;
+            }
+            case 'u': {
+                u;
+                break;
+            }
+            case 'f': {
+                f;
+                break;
+            }
+            case 'l': {
+                if (format[i++] == 'f') {
+                    lf;
+                    i++;
+                    break;
+                }
+            }
+            case 'c': {
+                c;
+                break;
+            }
+            case 's': {
+                s;
+                break;
+            }
+            case 'o': {
+                o;
+                break;
+            }
+            case 'x': {
+                x;
+                break;
+            }
+            case 'X': {
+                X;
+                i++;
+                break;
+            }
+            case 'R': {
+                if (format[i++] == 'o') {
+                    Ro;
+                    i++;
+                    break;
+                }
+            }
+            case 'Z': {
+                if (format[i++] == 'r') {
+                    Zr;
+                    i++;
+                    break;
+                }
+            }
+            case 'C': {
+                if (format[i++] == 'v') {
+                    Cv;
+                    i++;
+                    break;
+                }
+                else if (format[i++] == 'V') {
+                    CV;
+                    i++;
+                    break;
+                }
+            }
+            case 't': {
+                if (format[i++] == 'o') {
+                    To;
+                    i++;
+                    break;
+                }
+            }
+            case 'T': {
+                if (format[i++] == 'O') {
+                    To;
+                    i++;
+                    break;
+                }
+            }
+            case 'm': {
+                if (format[i++] == 'i') {
+                    mi;
+                    i++;
+                    break;
+                }
+                else if (format[i++] == 'u') {
+                    mu;
+                    i++;
+                    break;
+                }
+                else if (format[i++] == 'd') {
+                    md;
+                    i++;
+                    break;
+                }
+                else if (format[i++] == 'f') {
+                    mf;
+                    i++;
+                    break;
+                }
+            }
+            default:
+                fputc(format[i], stdout); // Необработанный символ 
+                break;
+            }
+        }
+        else
+            fputc(format[i], stdout); 
+    }
 }
 
 
-
-
-
 int main() {
-    float num = -12345.6789f;
-    char* result = float_to_str(num);
-    if (result) {
-        printf("Float as string: %s\n", result);
-        free(result);  // Освобождаем память после использования
-    }
-    else {
-        printf("Ошибка преобразования числа.\n");
-    }
+    
     return 0;
 }
 
@@ -329,8 +434,6 @@ char* double_to_str(double num)
 
     return str;
 }
-char* str_to_dynamic_str(char* str);
-
 char* num_to_base(int num, int base) {
     char* str = (char*)malloc(sizeof(char) * 25);
     int i = 0;
@@ -434,11 +537,164 @@ char** Z(unsigned int num) {
     result_str[0] = unsigned_int_to_str(null_index); 
     return result_str;
 }
-char* str_to_base(char* str, int num, int i);
-char* num_to_dumb(int num);
-char* unsig_to_dumb(unsigned int num);
+char* convert_base(int num, int base, char size) { 
+    char* buffer = (char*)malloc(65 * sizeof(char));  // Достаточно для 64 цифр + '\0' 
+    char digitsS[] = "0123456789abcdefghijklmnopqrstuvwxyz";
+    char digitsB[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"; 
+    int i = 0;
+    char* digits = NULL; 
+    switch (size)
+    {
+    case 'B':
+        digits = digitsB; 
+    case 'S':
+        digits = digitsS;  
+    }
+    int is_negative = 0;
+    
+    if (buffer == NULL) {
+        return OSHIBKA; 
+    }
+
+    if (num < 0 && base == 10) { //TODO: спросить у маши, почему только для 10
+        is_negative = 1;
+        num = -num; 
+    }
+
+    // Преобразуем число в строку
+    if (num == 0) { 
+        buffer[i++] = '0';
+    }
+
+    while (num > 0) { 
+        buffer[i++] = digits[num % base]; 
+        num /= base; 
+    }
+
+    if (is_negative) {
+        buffer[i++] = '-'; 
+    }
+
+    buffer[i] = '\0';
+
+    // Переворачиваем строку
+    int start = 0;
+    int end = i - 1;
+    while (start < end) {
+        char temp = buffer[start];
+        buffer[start] = buffer[end];
+        buffer[end] = temp;
+        start++;
+        end--;
+    }
+}
+char* str_to_base(char* str, int base) {
+    int result;
+    int power = 1;
+    int pr_value = 0;
+    int is_negative = 0;
+    int ind = 0;
+    int sch = strlen(str) - 1;
+    int i = 0;
+
+    if (str[0] == '-') {
+        is_negative = 1;
+        ind++;
+    } 
+
+    while (sch >= ind) {//
+        if (isalpha(str[sch])) { 
+            pr_value = tolower(str[sch]) - 'a' + 10;
+        }
+        if (isdigit(str[sch])) {
+            pr_value = str[sch] - '0';
+        }
+        else
+            return OSHIBKA;
+
+        if (pr_value >= base)
+            return OSHIBKA;
+        result += power * pr_value;
+        power *= base;
+        sch--;
+    }
+    if (is_negative) {
+        result = -result;
+    }
+    
+    return int_to_str(result);
+}
+char* iu_to_dumb(unsigned int num, int type) {//1 - отрицательные
+    if (num == 0 || num == 1) {
+        char * result = "00000000";
+        if (num == 1) {
+            result[7] = '1';
+        }
+        return result;
+    }
+    int max_ind = floor(log2(num)); 
+    int m = max_ind + 1;
+    int max = (max_ind + 1) % 8 == 0 ? max_ind + m / 8 - 1 : max_ind + m % 8 + m / 8 ;  
+    int izm_num = num; 
+
+    char* result = (char*)calloc(max+2, sizeof(char)); 
+    
+    if (result == NULL)
+        return OSHIBKA;
+
+    for (int i = max; izm_num; i--) { 
+        result[i] = izm_num % 2;
+        izm_num /= 2;
+        if ((i + 1) % 9 == 0 && i != max) {
+            result[i] = ' ';
+            i--;
+        }
+    }
+    result[max + 1] = '\0';
+
+    int max_position = -2; 
+
+    if (type == 1) {  
+        for (int i = max; i >= 0; i--) {
+            if (result[i] == '0')
+                result[i] = '1';
+            else if (result[i] == '1'){
+                result[i] = '0';
+                max_position = max_position > i ? max_position : i; 
+            }
+        }
+        if (max_position < 0) {
+            char* ptr = (char*)calloc(max + 10, sizeof(char));
+            if (ptr == NULL) {
+                free(result);
+                return OSHIBKA; 
+            }
+            free(result);
+            ptr[7] = '1';
+            return ptr;
+        }
+        else {
+            for (int i = max; i > max_position; i--) {
+                result[i] = '0';
+            }
+            result[max_position] = '1';
+        }
+    }
+    return result;
+}
 char* doub_to_dumb(double num);
 char* float_to_dumb(float num);
+int number_len(const int number) {
+    int len = 0;
+    int t = number;
+    if (number == 0)
+        return 1;
+    while (t > 0) {
+        len++;
+        t /= 10;
+    }
+    return len;
+}
 
 
 
@@ -536,11 +792,55 @@ void Zr(unsigned int num) {
     }
     free(num_str);
 }
-void Cv(char* buffer, int num, int buf_ind);
-void CV(char* buffer, int num, int buf_ind);
-void to(char* buffer, char* str, int buf_ind);
-void TO(char* buffer, char* str, int buf_ind);
-void mi(char* buffer, int num, int buf_ind);
-void mu(char* buffer, unsigned int num, int buf_ind);
+void Cv(int num, int base) {
+      
+    if (base < 2 || base > 36) {
+        base = 10;  // Если основание некорректное, используем десятичное
+    }
+    
+    char* str= convert_base(num, base, 'S'); 
+    fputs(str, stdout);
+    free(str); 
+}
+void CV(int num, int base) { 
+    if (base < 2 || base > 36) {
+        base = 10;  // Если основание некорректное, используем десятичное
+    }
+
+    char* str = convert_base(num, base, 'B');
+    fputs(str, stdout);
+    free(str); 
+}
+void To(char* str, int base) {
+    char* num_str = str_to_base(str, base); 
+    if (num_str == NULL) {
+        free(num_str);
+        return OSHIBKA;
+    }
+    fputs(num_str, stdout);
+    free(num_str);
+}
+void mi(int num) {
+    int type = 0;
+    if (num < 0) {
+        type = 1;
+    }
+    char* num_str = iu_to_dumb(num, type);
+    if (num_str == NULL) {
+        free(num_str);
+        return OSHIBKA;
+    }
+    fputs(num_str, stdout);
+    free(num_str);
+}
+void mu(unsigned int num) {
+    char* num_str = iu_to_dumb(num, 0);
+    if (num_str == NULL) {
+        free(num_str);
+        return OSHIBKA;
+    }
+    fputs(num_str, stdout);
+    free(num_str);
+}
 void md(char* buffer, double num, int buf_ind);
 void mf(char* buffer, float num, int buf_ind);
