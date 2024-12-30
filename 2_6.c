@@ -1,46 +1,57 @@
-#include<stdio.h>
-#include<stdarg.h>
+#include <stdio.h>
+#include <stdarg.h>
 
-// base основание степени, которое мы будем возводить
-// exponent - степень, в которую возводим base
-double my_pow(double base, int exponent){
-    if (exponent == 0){
-        return 1.0;
+#define OK 0
+#define ERROR_INVALID_ARGUMENTS -1
+#define ERROR_NULL_POINTER -2
+
+int evaluate_polynomial(double x, int degree, double *result, ...);
+
+int main() {
+    double x = 3.0;
+    int degree = 2;
+    double result = 0.0;
+    int status;
+
+    status = evaluate_polynomial(x, degree, &result, 1.0, -7.0, 10.0);
+    
+    if (status != OK) {
+        if (status == ERROR_INVALID_ARGUMENTS) {
+            printf("error: invalid arguments\n");
+        } else if (status == ERROR_NULL_POINTER) { 
+            printf("error: null pointer encountered\n");
+        } else { 
+            printf("unknown error: %d\n", status);
+        }
+        return status;
+    } else {
+        printf("The value of the polynomial at x = %.2f is: %.2f\n", x, result);
     }
-    double result = 1.0;
-    for (int i=0; i<exponent; i++)
-    {
-        result *= base;
-    }
-    return result;
+
+    return OK;
 }
 
-double polynomial(double x, int degree, ...)
-// double - значение многочлена в заданной точке
-// x-точка, в которой будет вычисляться значение многочлена
-// degree степень многочлена
-{
-    va_list args; // Переменная для хранения списка аргументов
-    va_start(args, degree); // Инициализация списка
-
-    double result = 0.0; // итоговое значение многочлена
-
-    for (int i = degree; i>=0; i--)
-    // функция пройдёт от старшей степени degree до 0, i - текущая степень многочлена
-    {
-        double index = va_arg(args, double);
-        result += index * my_pow(x, i);
-        // Добавляем к результату текущий член многочлена, (возводим x в степень i)
+int evaluate_polynomial(double x, int degree, double *result, ...) {
+    int i;
+    double coeff;
+    va_list args;
+    
+    if (degree < 0) {
+        return ERROR_INVALID_ARGUMENTS;
     }
+    if (result == NULL) {
+        return ERROR_NULL_POINTER;
+    }
+
+    va_start(args, result);
+
+    *result = 0.0;
+
+    for (i = 0; i <= degree; i++) {
+        coeff = va_arg(args, double);
+        *result = *result * x + coeff;
+    }
+
     va_end(args);
-    return result;
-}
-
-int main(){
-    double x = 2.0; // знчение точки, в которой будет вычисляться многочлен
-    int degree = 5; // степень многочлена, максимальная
-
-    double result = polynomial(x, degree, 1.98, -6.542, 98.3, 26.54, 67.0, 76.8);
-    printf("The value of the polynomail at the point x = %.6f: %.6f\n", x, result);
-    return 0;
+    return OK;
 }

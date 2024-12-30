@@ -1,60 +1,146 @@
-#include <stdio.h> 
-#include <stdarg.h> 
-#include <stdlib.h> 
-#include <string.h> 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdarg.h>
+#include <math.h>
 
-#define YESS 1  
-#define OH_NO 0 
+#define OK 0
+#define ERROR_INVALID_ARGUMENTS -1
+#define ERROR_MEMORY_ALLOCATION -2
+#define ERROR_INVALID_NUMBER -3
+#define ERROR_NO_Kaprekar_FOUND -4
 
-int is_Kaprecar(long long x) { 
-    long long square = x * x; 
-    char square_num[BUFSIZ]; 
-    int len;
+int isKaprekar(int num);
+int findKaprekarNumbers(char ***result, int base, int count, ...);
 
-    sprintf(square_num, "%lld", square); 
+int main() {
+    char **Kaprekar_numbers;
+    
+    int base = 10;
+    int count = findKaprekarNumbers(&Kaprekar_numbers, base, 5, "1", "45", "55", "99", "297");
 
-    len = 0; 
-    while (square_num[len] != '\0') { 
-        len++; 
-    } 
+    if (count > 0) {
+        printf("Kaprekar numbers in base %d:\n", base);
+        for (int i = 0; i < count; i++) {
+            printf("%s\n", Kaprekar_numbers[i]);
+            free(Kaprekar_numbers[i]);
+        }
+        free(Kaprekar_numbers);
+    } else if (count != OK) {
+        switch (count) {
+        case ERROR_MEMORY_ALLOCATION:
+            printf("Error: Memory allocation failed.\n");
+            break;
+        case ERROR_NO_Kaprekar_FOUND:
+            printf("Error: No Kaprekar numbers found.\n");
+            break;
+        default:
+            printf("Error: Unknown error code %d.\n", count);
+            break;
+        }
+    }
+    
+    base = 36;
+    count = findKaprekarNumbers(&Kaprekar_numbers, base, 1, "19");
 
-    for (int i = 0; i < len; i++) {  
-        char left_part[i + 1];
-        strncpy(left_part, square_num, i);
-        left_part[i] = '\0'; 
+    if (count > 0) {
+        printf("Kaprekar numbers in base %d:\n", base);
+        for (int i = 0; i < count; i++) {
+            printf("%s\n", Kaprekar_numbers[i]);
+            free(Kaprekar_numbers[i]);
+        }
+        free(Kaprekar_numbers);
+    } else if (count != OK) {
+        switch (count) {
+        case ERROR_MEMORY_ALLOCATION:
+            printf("Error: Memory allocation failed.\n");
+            break;
+        case ERROR_NO_Kaprekar_FOUND:
+            printf("Error: No Kaprekar numbers found.\n");
+            break;
+        default:
+            printf("Error: Unknown error code %d.\n", count);
+            break;
+        }
+    }
 
-        char *right_part = square_num + i;
+    return 0;
+}
 
-        long long left_num = strtoll(left_part, NULL, 10);
-        long long right_num = strtoll(right_part, NULL, 10);
+int isKaprekar(int num) {
+    if (num < 0) return 0;
 
-        if (left_num + right_num == x) { 
-            return YESS; 
-        } 
-    } 
+    long long square = (long long)num * num;
+    int num_digits = 0, temp = num, i;
+    
+    while (temp > 0) {
+        num_digits++;
+        temp /= 10;
+    }
+    
+    if (num == 0) {
+        return 1;
+    }
 
-    return OH_NO; 
-} 
+    long long divisor = 1;
+    for (i = 0; i < num_digits; i++) {
+        divisor *= 10;
+    }
+    
+    long long left_part = square / divisor;
+    long long right_part = square % divisor;
+    
+    return (left_part + right_part == num);
+}
 
-void number_of_Kaprecar(int count, int base, ...) { 
-    va_list ptr; 
-    va_start(ptr, base); 
+int findKaprekarNumbers(char ***result, int base, int count, ...) {
+    va_list args;
+    va_start(args, count);
+    int i;
 
-    for (int i = 0; i < count; i++) { 
-        const char* num_str = va_arg(ptr, const char*);  
-        long long number = strtoll(num_str, NULL, base);  
+    *result = (char **)malloc(count * sizeof(char *));
+    if (*result == NULL) {
+        va_end(args);
+        return ERROR_MEMORY_ALLOCATION;
+    }
 
-        if (is_Kaprecar(number)) { 
-            printf("%s is a Kaprekar number\n", num_str); 
-        } else { 
-            printf("%s is not a Kaprekar number\n", num_str); 
-        } 
-    } 
+    int result_count = 0;
+    for (i = 0; i < count; i++) {
+        char *num_str = va_arg(args, char *); 
+        
+        char *endptr;
+        
+        if (num_str[0] == '-' || num_str[0] == '–') {
+            continue;
+        }
 
-    va_end(ptr); 
-} 
+        long num = strtol(num_str, &endptr, base);
+        
+        if (*endptr != '\0' || num < 0) {
+            continue;
+        }
 
-int main() { 
-    number_of_Kaprecar(1, 10, "8"); 
-    return 0; 
+        if (isKaprekar(num)) {
+            (*result)[result_count] = strdup(num_str);
+            if ((*result)[result_count] == NULL) {
+                for (int j = 0; j < result_count; j++) {
+                    free((*result)[j]);
+                }
+                free(*result);
+                va_end(args);
+                return ERROR_MEMORY_ALLOCATION;
+            }
+            result_count++;
+            
+    }
+
+    va_end(args);
+
+    if (result_count == 0) {
+        free(*result);
+        *result = NULL;
+        return ERROR_NO_Kaprekar_FOUND;
+    }
+
+    return result_count;
 }

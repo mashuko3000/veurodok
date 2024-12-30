@@ -61,121 +61,122 @@ void my_printf(const char* format, ...)
     for (int i = 0; format[i] != '\0'; i++) {
         if (format[i] == '%') {
             i++; // Переход к следующему символу после '%'
-            switch (format[i]) {
-            case 'd': {
-                d(va_arg(args, int));
-                break;
-            }
-            case 'u': {
-                u(va_arg(args, unsigned int));
-                break;
-            }
-            case 'f': {
-                f(va_arg(args, double)); // при va_arg(args, float) что-то странное происходит 
-                break;
-            }
-            case 'l': {
-                if (format[i + 1] == 'f') {
-                    lf(va_arg(args, double));
+            switch (format[i])
+            {
+                case 'd': {
+                    d(va_arg(args, int));
+                    break;
+                }
+                case 'u': {
+                    u(va_arg(args, unsigned int));
+                    break;
+                }
+                case 'f': {
+                    printf("Entered 'f' manip handle\n");
+                    fl = (float)va_arg(args, double);
+                    printf("fl == %f\n", fl);
+                    f(fl); // при va_arg(args, float) что-то странное происходит 
+                    printf("'f' manip handled\n");
+                    break;
+                }
+                case 'l': {
+                    if (format[i + 1] == 'f') {
+                        lf(va_arg(args, double));
+                        i++;
+                    }
+                    break;
+                }
+                case 'c': {
+                    c(va_arg(args, char));
+                    break;
+                }
+                case 's': {
+                    s(va_arg(args, char*));
+                    break;
+                }
+                case 'o': {
+                    o(va_arg(args, int));
+                    break;
+                }
+                case 'x': {
+                    x(va_arg(args, int));
+                    break;
+                }
+                case 'X': {
+                    X(va_arg(args, int));
                     i++;
                     break;
                 }
-            }
-            case 'c': {
-                c(va_arg(args, char));
-                break;
-            }
-            case 's': {
-                s(va_arg(args, char*));
-                break;
-            }
-            case 'o': {
-                o(va_arg(args, int));
-                break;
-            }
-            case 'x': {
-                x(va_arg(args, int));
-                break;
-            }
-            case 'X': {
-                X(va_arg(args, int));
-                i++;
-                break;
-            }
-            case 'R': {
-                if (format[i + 1] == 'o') {
-                    Ro(va_arg(args, int));
-                    i++;
+                case 'R': {
+                    if (format[i + 1] == 'o') {
+                        Ro(va_arg(args, int));
+                        i++;
+                    }
                     break;
                 }
-            }
-            case 'Z': {
-                if (format[i + 1] == 'r') {
-                    val = va_arg(args, unsigned int);
-                    Zr(val);
-                    i++;
+                case 'Z': {
+                    if (format[i + 1] == 'r') {
+                        val = va_arg(args, unsigned int);
+                        Zr(val);
+                        i++;
+                    }
                     break;
                 }
-            }
-            case 'C': {
-                if (format[i + 1] == 'v') {
-                    val = va_arg(args, int);
-                    val2 = va_arg(args, int);
-                    Cv(val, val2);
-                    i++;
+                case 'C': {
+                    if (format[i + 1] == 'v') {
+                        val = va_arg(args, int);
+                        val2 = va_arg(args, int);
+                        Cv(val, val2);
+                        i++;
+                    }
+                    else if (format[i + 1] == 'V') {
+                        val = va_arg(args, int);
+                        val2 = va_arg(args, int);
+                        CV(val, val2);
+                        i++;
+                    }
                     break;
                 }
-                else if (format[i + 1] == 'V') {
-                    val = va_arg(args, int);
-                    val2 = va_arg(args, int);
-                    CV(val, val2);
-                    i++;
+                case 't': {
+                    if (format[i + 1] == 'o') {
+                        str = va_arg(args, char*);
+                        val = va_arg(args, int);
+                        To(str, val);
+                        i++;
+                    }
                     break;
                 }
-            }
-            case 't': {
-                if (format[i + 1] == 'o') {
-                    str = va_arg(args, char*);
-                    val = va_arg(args, int);
-                    To(str, val);
-                    i++;
+                case 'T': {
+                    if (format[i + 1] == 'O') {
+                        str = va_arg(args, char*);
+                        val = va_arg(args, int);
+                        To(str, val);
+                        i++;
+                    }
                     break;
                 }
-            }
-            case 'T': {
-                if (format[i + 1] == 'O') {
-                    str = va_arg(args, char*);
-                    val = va_arg(args, int);
-                    To(str, val);
-                    i++;
+                case 'm': {
+                    if (format[i + 1] == 'i') {
+                        mi(va_arg(args, int));
+                        i++;
+                    }
+                    else if (format[i + 1] == 'u') {
+                        mu(va_arg(args, int));
+                        i++;
+                    }
+                    else if (format[i + 1] == 'd') {
+                        md(va_arg(args, double));
+                        i++;
+                    }
+                    else if (format[i + 1] == 'f') {
+                        mf((float)va_arg(args, double));  
+                        i++;
+                    }
                     break;
                 }
-            }
-            case 'm': {
-                if (format[i + 1] == 'i') {
-                    mi(va_arg(args, int));
-                    i++;
+                default:
+                    fputc(format[i], stdout); // Необработанный символ 
                     break;
-                }
-                else if (format[i + 1] == 'u') {
-                    mu(va_arg(args, int));
-                    i++;
-                    break;
-                }
-                else if (format[i + 1] == 'd') {
-                    md(va_arg(args, double));
-                    i++;
-                    break;
-                }
-                else if (format[i + 1] == 'f') {
-                    mf((float)va_arg(args, double));  
-                    i++;
-                    break;
-                }
-            }
-            default:
-                fputc(format[i], stdout); // Необработанный символ 
-                break;
             }
         }
         else
@@ -185,14 +186,32 @@ void my_printf(const char* format, ...)
     va_end(args);
 }
 
+void foo(
+    int x,
+    ...
+)
+{
+    float f;
+    va_list l;
+    va_start(l, x);
+
+    f = (float)va_arg(l, double);
+    printf("float == %f\n", (double)f);
+
+    va_end(l);
+}
 
 int main() {
+    printf("sizeof(float) == %u\n", sizeof(float));
+    printf("puksrenjk == %f\n", (float)123.45);
+    // vprintf
+    foo(10, (123.45));
     //если просто вызвать функцию f, то она правильно выводит 
-    my_printf("Examples of how the my_printf works:\n for int: %d for unsigned int: %u\n for char: %c\n for string: %s\n for octal: %o\n for hexademical: %x\n for Hexademical: %X", 10, 20, 'A', "Hello", 10, 15, 15);
-    my_printf(" for float: %f\n for double : %lf", (float)12.11, -5.564);
-    my_printf(" for Roman:%Ro, %Ro\n for the Zenkendorf representation: %d - %Zr, %d - %Zr", 999, 123, 10, 10, 289, 289);
-    my_printf(" for number to base: %Cv, %Cv\n for Number to base: %CV, %CV\n for decimal representation: %to\n for decimal representation: %TO", 15, 30, 134, 16, 15, 30, 134, 16, "abf", 17, "ABF", 17);
-    my_printf(" for int in memory: %mi\n for unsigned int in memory: %mu\n for double in memory: %md, %md\n for float in memory: %mf, %mf", -546, 546, -0.342, 345.78, (float)1.2, (float)21.3); 
+    my_printf("Examples of how the my_printf works:\n for int: %d for unsigned int: %u\n for char: %c\n for string: %s\n for octal: %o\n for hexademical: %x\n for Hexademical: %08X", 10, 20, 'A', "Hello", 10, 15, 15);
+    //my_printf(" for float: %f\n for double : %lf", (float)12.11, -5.564);
+    //my_printf(" for Roman:%Ro, %Ro\n for the Zenkendorf representation: %d - %Zr, %d - %Zr", 999, 123, 10, 10, 289, 289);
+    //my_printf(" for number to base: %Cv, %Cv\n for Number to base: %CV, %CV\n for decimal representation: %to\n for decimal representation: %TO", 15, 30, 134, 16, 15, 30, 134, 16, "abf", 17, "ABF", 17);
+    //my_printf(" for int in memory: %mi\n for unsigned int in memory: %mu\n for double in memory: %md, %md\n for float in memory: %mf, %mf", -546, 546, -0.342, 345.78, (float)1.2, (float)21.3); 
 
     return 0;
 }
@@ -850,7 +869,9 @@ void u(unsigned int num)
     free(num_str);
 }
 void f(float num) {
+    printf("We are here...\n");
     char* num_str = float_to_str(num);
+    printf("We are there...\n");
     if (num_str == OSHIBKA) {
         return; 
     }
@@ -876,7 +897,7 @@ void o(int num) {
     char* num_str = num_to_base(num, 8);
     if (num_str == NULL) {
         free(num_str);
-        return OSHIBKA;
+        return;
     }
     fputs(num_str, stdout);
     free(num_str);
@@ -885,7 +906,7 @@ void x(int num) {
     char* num_str = num_to_base(num, 16);
     if (num_str == NULL) {
         free(num_str);
-        return OSHIBKA;
+        return;
     }
     fputs(num_str, stdout);
     free(num_str);
@@ -894,7 +915,7 @@ void X(int num) {
     char* num_str = num_to_base(num, 160);
     if (num_str == NULL) {
         free(num_str);
-        return OSHIBKA;
+        return;
     }
     fputs(num_str, stdout);
     free(num_str);
@@ -903,7 +924,7 @@ void Ro(int num) {
     char* num_str = Roman(num);
     if (num_str == NULL) {
         free(num_str);
-        return OSHIBKA;
+        return;
     }
     fputs(num_str, stdout);
     free(num_str);
@@ -924,6 +945,10 @@ void Zr(unsigned int num) {
     free(num_str[0]);
     free(num_str);
 }
+
+
+// int Cv(int num, int base, enum target (file stream / string stream), void *stream (FILE * - for file, char ** - for string) 
+
 void Cv(int num, int base) {
 
     if (base < 2 || base > 36) {
@@ -948,7 +973,7 @@ void To(char* str, int base) {
     char* num_str = str_to_base(str, base);
     if (num_str == NULL) {
         free(num_str);
-        return OSHIBKA;
+        return;
     }
     fputs(num_str, stdout);
     free(num_str);

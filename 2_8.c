@@ -1,89 +1,212 @@
 #include <stdio.h>
-#include <stdarg.h>
+#include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
 
-// Функция для перевода символа в его числовое значение
+#define OK 0
+#define ERROR_INVALID_ARGUMENTS -1
+#define ERROR_MEMORY_ALLOCATION -2
+#define ERROR_INVALID_NUMBER -3
+#define ERROR_NO_KAPREKAR_FOUND -4
+
+int char_to_digit(char c, int base);
+char digit_to_char(int digit);
+char* pad_with_leading_zeros(const char *str, int length);
+int add_in_base_columnwise(const char *num1, const char *num2, int base, char **result);
+int sum_in_base_columnwise(int base, int num_count, const char *nums[], char **result);
+
+int main() {
+    int base = 6;  // for example, base 10 (decimal system)
+    int num_count = 3;
+    const char *numbers[] = {"0011000000000000000000000000000000000001", "0000000000000000000040000000000000000010", "5"};
+
+    char *result;
+    int status = sum_in_base_columnwise(base, num_count, numbers, &result);
+
+    if (status == OK) {
+        printf("sum of numbers in base %d: %s\n", base, result);  // print sum in the given base
+        free(result);
+    } else {
+        switch (status) {
+            case ERROR_MEMORY_ALLOCATION:
+                printf("error: memory allocation failed.\n");
+                break;
+            case ERROR_INVALID_ARGUMENTS:
+                printf("error: invalid base.\n");
+                break;
+            case ERROR_INVALID_NUMBER:
+                printf("error: invalid character in number.\n");
+                break;
+            default:
+                printf("error: unknown error code %d.\n", status);
+                break;
+        }
+    }
+
+    return 0;
+}
+
 int char_to_digit(char c, int base) {
     if (isdigit(c)) {
         return c - '0';
     } else if (isalpha(c)) {
-        return tolower(c) - 'a' + 10;
+        int digit = toupper(c) - 'A' + 10;
+        if (digit >= base) {
+            return ERROR_INVALID_NUMBER;  // invalid character for this base
+        }
+        return digit;
     }
-    return -1;  // Некорректный символ
+    return ERROR_INVALID_NUMBER;  // invalid character
 }
 
-// Функция для перевода числа из строки в десятичное представление
-unsigned long long str_to_decimal(const char *num, int base) {
-    unsigned long long result = 0;
-    while (*num) {
-        result = result * base + char_to_digit(*num, base);
-        num++;
-    }
-    return result;
-}
-
-// Функция для перевода числа из десятичного представления в строку в указанной системе счисления
-void decimal_to_str(unsigned long long num, int base, char *result) {
-    const char digits[] = "0123456789abcdefghijklmnopqrstuvwxyz";
-    char temp[64];
-    int index = 0;
-
-    if (num == 0) {
-        result[index++] = '0';
+char digit_to_char(int digit) {
+    if (digit < 10) {
+        return digit + '0';
     } else {
-        while (num > 0) {
-            temp[index++] = digits[num % base];
-            num /= base;
-        }
-        // Обратить строку
-        for (int i = 0; i < index; i++) {
-            result[i] = temp[index - i - 1];
-        }
+        return digit - 10 + 'A';
     }
-    result[index] = '\0';
 }
 
-// Функция сложения двух чисел в заданной системе счисления
-char* add_numbers(int base, const char *num1, const char *num2, char *result) {
-    unsigned long long n1 = str_to_decimal(num1, base);
-    unsigned long long n2 = str_to_decimal(num2, base);
-    unsigned long long sum = n1 + n2;
-    decimal_to_str(sum, base, result);
+char* pad_with_leading_zeros(const char *str, int length) {
+    int padding;
+    int str_len = strlen(str);
+    if (str_len >= length) {
+        char *copy = strdup(str);
+        if (copy==NULL) {
+            return NULL;
+        }
+        return copy;
+    }
+
+    char *result = (char *)malloc(length + 1);
+    if (result == NULL) {
+        return NULL;  // memory allocation error
+    }
+
+    // add leading zeros
+    padding = length - str_len;
+    memset(result, '0', padding);  // fill with leading zeros
+    strcpy(result + padding, str);  // copy the original string
+
     return result;
 }
 
-// Основная функция для вычисления суммы всех чисел
-char* sum_numbers(int base, int count, char *result, ...) {
-    va_list args;
-    va_start(args, result);
+int add_in_base_columnwise(const char *num1, const char *num2, int base, char **result) {
+    int len1 = strlen(num1);
+    int len2 = strlen(num2);
+    int sum_digit, i;
+    int max_len = (len1 > len2) ? len1 : len2;
+    int carry = 0;
+    char *sum = (char *)malloc(max_len + 2); // for result with carry
 
-    // Сначала берем первое число
-    char *current_num = va_arg(args, char*);
-    strcpy(result, current_num);
-
-    // Затем поочередно прибавляем остальные числа
-    for (int i = 1; i < count; i++) {
-        current_num = va_arg(args, char*);
-        char temp_result[100];
-        add_numbers(base, result, current_num, temp_result);
-        strcpy(result, temp_result);
+    if (sum == NULL) {
+        return ERROR_MEMORY_ALLOCATION;  // memory allocation error
     }
 
-    va_end(args);
-    return result;
+    int index = 0;
+    while (len1 > 0 || len2 > 0 || carry > 0) {
+        int digit1 = (len1 > 0) ? char_to_digit(num1[--len1], base) : 0;
+        int digit2 = (len2 > 0) ? char_to_digit(num2[--len2], base) : 0;
+
+        if (digit1 == ERROR_INVALID_NUMBER || digit2 == ERROR_INVALID_NUMBER) {
+            free(sum);
+            return ERROR_INVALID_NUMBER;  // invalid character
+        }
+
+        sum_digit = digit1 + digit2 + carry;
+        carry = sum_digit / base;  // carry over
+        sum[index++] = digit_to_char(sum_digit % base);  // remainder is added to result
+    }
+
+    sum[index] = '\0';
+
+    // reverse the result string
+    for (i = 0; i < index / 2; i++) {
+        char temp = sum[i];
+        sum[i] = sum[index - 1 - i];
+        sum[index - 1 - i] = temp;
+    }
+
+    *result = sum;
+    return OK;
 }
 
-int main() {
-    char result[100];
+int sum_in_base_columnwise(int base, int num_count, const char *nums[], char **result) {
+    if (base < 2 || base > 36) {
+        return ERROR_INVALID_ARGUMENTS;  // invalid base
+    }
 
-    // Пример с основанием 16 (шестнадцатеричная система счисления)
-    sum_numbers(32, 3, result, "pdd", "ad", "3b");
-    printf("Сумма чисел в шестнадцатеричной системе: %s\n", result);
+    // find the maximum length of the numbers
+    int max_len = 0;
+    int i, j, start;
+    for (i = 0; i < num_count; i++) {
+        int len = strlen(nums[i]);
+        if (len > max_len) {
+            max_len = len;
+        }
+    }
 
-    // Пример с основанием 10 (десятичная система счисления)
-    sum_numbers(10, 4, result, "123", "456", "789", "101");
-    printf("Сумма чисел в десятичной системе: %s\n", result);
+    // align all numbers to the maximum length by adding leading zeros
+    char **padded_nums = (char **)malloc(num_count * sizeof(char *));
+    if (padded_nums == NULL){
+        return ERROR_MEMORY_ALLOCATION;
+    }
+    for (i = 0; i < num_count; i++) {
+        padded_nums[i] = pad_with_leading_zeros(nums[i], max_len);
+        if (padded_nums[i] == NULL) {
+            for (j = 0; j < i; j++) {
+                free(padded_nums[j]);
+            }
+            free(padded_nums);
+            return ERROR_MEMORY_ALLOCATION;  // memory allocation error
+        }
+    }
 
-    return 0;
+    // now add the aligned numbers
+    char *temp_result = strdup(padded_nums[0]);
+    if (temp_result == NULL) {
+        for (i = 0; i < num_count; i++) {
+            free(padded_nums[i]);
+        }
+        free(padded_nums);
+        return ERROR_MEMORY_ALLOCATION;  // memory allocation error
+    }
+
+    for (i = 1; i < num_count; i++) {
+        char *sum_result;
+        int status = add_in_base_columnwise(temp_result, padded_nums[i], base, &sum_result);
+        if (status != OK) {
+            free(temp_result);
+            for (int i = 0; i < num_count; i++) {
+                free(padded_nums[i]);
+            }
+            free(padded_nums);
+            return status;  // error during addition
+        }
+        free(temp_result);
+        temp_result = sum_result;
+    }
+
+    // removing leading zeros from the result
+    start = 0;
+    while (temp_result[start] == '0' && temp_result[start] != '\0') {
+        start++;
+    }
+
+    // if all characters are zeros, return "0"
+    if (temp_result[start] == '\0') {
+        *result = strdup("0");
+    } else {
+        *result = strdup(temp_result + start);
+    }
+
+    free(temp_result);
+
+    // free aligned numbers
+    for (i = 0; i < num_count; i++) {
+        free(padded_nums[i]);
+    }
+    free(padded_nums);
+
+    return OK;
 }

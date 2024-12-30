@@ -3,6 +3,8 @@
 #include <string.h>
 #include <stdio.h>
 
+#pragma warning(disable: 4996)
+
 char *int_to_str(int num);
 char *float_to_str(float num); // получившуюся строчку копируем в буфер
 char *double_to_str(double num);
