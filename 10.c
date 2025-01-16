@@ -20,22 +20,26 @@ unsigned int x(const char **input);
 unsigned int X(const char **input);
 
 // нестандартные флаги
-
-
 int Ro(const char **input);
 int Zr(const char **input);
-int Cv(const char **input, int base);
+int Cv(const char **input, int base, int koef);
 int CV(const char **input, int base);
 
 int overscanf(const char *format, ...) {
+    int strl;
     va_list args;
     va_start(args, format); 
     
     
-    char input[100]; 
+    char input[BUFSIZ]; 
     if (fgets(input, sizeof(input), stdin) == NULL) {
         va_end(args);
         return -1;
+    }
+
+    if (input[(strl = strlen(input)) - 1] == '\n')
+    {
+        input[strl - 1] = '\0';
     }
 
     const char *ptr = format;
@@ -116,12 +120,12 @@ int overscanf(const char *format, ...) {
                     if (*(ptr + 1) == 'v') {
                         int *iptr = va_arg(args, int*);
                         int base = va_arg(args, int);
-                        *iptr = Cv(&str_input, base);
+                        *iptr = Cv(&str_input, base, 1);
                         ptr++; 
                     } else if (*(ptr + 1) == 'V') {
                         int *iptr = va_arg(args, int*);
                         int base = va_arg(args, int);
-                        *iptr = CV(&str_input, base); 
+                        *iptr = Cv(&str_input, base, 2); 
                         ptr++;
                     }
                     break;
@@ -143,7 +147,7 @@ int overfscanf(FILE *stream, const char *format, ...)
     
     
     char input[100]; 
-    if (fgets(input, sizeof(input), stdin) == NULL) {
+    if (fgets(input, sizeof(input), stream) == NULL) {
         va_end(args);
         return -1;
     }
@@ -226,12 +230,12 @@ int overfscanf(FILE *stream, const char *format, ...)
                     if (*(ptr + 1) == 'v') {
                         int *iptr = va_arg(args, int*);
                         int base = va_arg(args, int);
-                        *iptr = Cv(&str_input, base);
+                        *iptr = Cv(&str_input, base, 1);
                         ptr++; 
                     } else if (*(ptr + 1) == 'V') {
                         int *iptr = va_arg(args, int*);
                         int base = va_arg(args, int);
-                        *iptr = CV(&str_input, base); 
+                        *iptr = Cv(&str_input, base, 2); 
                         ptr++;
                     }
                     break;
@@ -327,12 +331,12 @@ int oversscanf(const char *str, const char *format, ...)
                     if (*(ptr + 1) == 'v') {
                         int *iptr = va_arg(args, int*);
                         int base = va_arg(args, int);
-                        *iptr = Cv(&str_input, base);
+                        *iptr = Cv(&str_input, base, 1);
                         ptr++; 
                     } else if (*(ptr + 1) == 'V') {
                         int *iptr = va_arg(args, int*);
                         int base = va_arg(args, int);
-                        *iptr = CV(&str_input, base); 
+                        *iptr = Cv(&str_input, base, 2); 
                         ptr++;
                     }
                     break;
@@ -449,7 +453,7 @@ char* s(const char **input)
         (*input)++;
     }
     size_t length = *input - start;
-    char *str = malloc(length + 1);
+    char *str = (char *)malloc(length + 1);
     if (str) {
         strncpy(str, start, length);
         str[length] = '\0';
@@ -494,37 +498,73 @@ unsigned int X(const char **input) {
     return value;
 }
 
-int Ro(const char **input) {
-    int result = 0;
-    char c;
-    while ((c = **input) != '\0') {
-        switch (tolower(c)) {
-            case 'i': result += 1; break;
-            case 'v': result += 5; break;
-            case 'x': result += 10; break;
-            case 'l': result += 50; break;
-            case 'c': result += 100; break;
-            case 'd': result += 500; break;
-            case 'm': result += 1000; break;
-            default: return result; 
+int Ro(const char ** input) {
+    char* romanNumerals[] = { "I", "IV", "V", "IX", "X", "XL", "L", "XC", "C", "CD", "D", "CM", "M" };
+    int values[] = { 1, 4, 5, 9, 10, 40, 50, 90, 100, 400, 500, 900, 1000 };
+    
+    int length = strlen(*input);
+    int total = 0;
+    int i = 0;
+
+    while (i < length) {
+        int matched = 0;
+        for (int j = 12; j >= 0; j--) {
+            int len = strlen(romanNumerals[j]);
+            if (strncmp(*input + i, romanNumerals[j], len) == 0) {
+                total += values[j];
+                i += len;
+                matched = 1;
+                break;
+            }
         }
-        (*input)++;
+        if (!matched) {
+            return -1;
+        }
     }
-    return result;
+
+    return total;
 }
 
 int Zr(const char **input) {
-    int fib[] = {1, 1, 2, 3, 5, 8, 13, 21, 34, 55};
-    int fibCount = sizeof(fib) / sizeof(fib[0]);
-    int value = 0;
-    const char *str = *input;
-    int length = strlen(str);
-    
+    int capacity = 10; 
+    int fibCount = 2;
+    int length = strlen(*input);
+    int value = 0, i;
     int fibIndex = 0;
-    for (int i = 0; i < length; i++) {
+    const char *str = *input;
+    if (length == 0) {
+        return 0;
+    }
+
+    int *fibArray = (int *)malloc(capacity * sizeof(int));
+    if (fibArray == NULL) {
+        return 0; 
+    }
+
+    fibArray[0] = 1;
+    fibArray[1] = 1;
+
+    while (fibArray[fibCount - 1] <= length)
+    {
+        if (fibCount == capacity)
+          {
+            capacity *= 2;
+            int* temp = (int*)realloc(fibArray, capacity * sizeof(int));
+            if (temp == NULL)
+            {
+              free(fibArray);
+              return 0; 
+            }
+            fibArray = temp;
+          }
+        fibArray[fibCount] = fibArray[fibCount - 1] + fibArray[fibCount - 2];
+        fibCount++;
+    }
+    
+    for (i = 0; i < length; i++) {
         if (str[i] == '1') {
             if (i != length - 1) {
-                value += fib[fibIndex];
+                value += fibArray[fibIndex];
             }
         }
         fibIndex++;
@@ -533,7 +573,7 @@ int Zr(const char **input) {
     return value;
 }
 
-int Cv(const char **input, int base) {
+int Cv(const char **input, int base, int koef) {
     if (base < 2 || base > 36) {
         base = 10; 
     }
@@ -545,42 +585,20 @@ int Cv(const char **input, int base) {
             if (digit >= base) break; 
             value = value * base + digit;
             (*input)++;
-        } else if (c >= 'a' && c <= 'z') {
-            int digit = c - 'a' + 10;
-            if (digit >= base) break; 
-            value = value * base + digit;
-            (*input)++;
-        } else {
+        } else if (koef == 1 || koef == 2){
+            if (isalpha(c)) {
+                int digit = tolower(c) - 'a' + 10;
+                if (digit >= base) break; 
+                value = value * base + digit;
+                (*input)++;
+            }
+        } 
+        else {
             break; 
         }
     }
     return value;
 }
-
-int CV(const char **input, int base) {
-    if (base < 2 || base > 36) {
-        base = 10;
-    }
-    int value = 0;
-    char c;
-    while ((c = **input) != '\0') {
-        if (isdigit(c)) {
-            int digit = c - '0';
-            if (digit >= base) break; 
-            value = value * base + digit;
-            (*input)++;
-        } else if (c >= 'A' && c <= 'Z') {
-            int digit = c - 'A' + 10;
-            if (digit >= base) break; 
-            value = value * base + digit;
-            (*input)++;
-        } else {
-            break; 
-        }
-    }
-    return value;
-}
-
 
 int main() {
     int a;
@@ -594,7 +612,7 @@ int main() {
     char *s_value;
     unsigned int o_value, x_value, X_value;
     int ro_value, Cv_value, CV_value, zr_value;
-
+    /*
     printf("Введите целое число (d): ");
     overscanf("%d", &a);
     printf("Целое число: %d\n", a);
@@ -635,11 +653,13 @@ int main() {
     printf("Введите значение для %%Ro (римские числа): ");
     overscanf("%Ro", &ro_value);
     printf("Результат %%Ro: %d\n", ro_value);
+*/
 
     printf("Введите значение для %%Zr (римские числа): ");
     overscanf("%Zr", &zr_value);
     printf("Результат %%Zr: %d\n", zr_value);
 
+/*
     printf("Введите значение для %%Cv (система счисления): ");
     overscanf("%Cv", &Cv_value, 16); 
     printf("Результат %%Cv: %d\n", Cv_value);
@@ -647,6 +667,6 @@ int main() {
     printf("Введите значение для %%CV (система счисления с верхним регистром): ");
     overscanf("%CV", &CV_value, 16); 
     printf("Результат %%CV: %d\n", CV_value);
-
+*/
     return 0;
 }
