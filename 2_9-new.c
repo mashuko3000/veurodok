@@ -1,4 +1,4 @@
-#include <stdarg.h>
+#include <stdarg.h> 
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -6,15 +6,11 @@
 #include <math.h>
 #include <stdint.h>
 
-#pragma warning (disable:4996)  
+#pragma warning(disable : 4996)
 
-#define OSHIBKA NULL 
+#define OSHIBKA NULL
 
-typedef enum {
-    STDOUT,
-    FILES,
-    STRING
-} Type;   
+typedef enum { STDOUT, FILES, STRING } Type;
 
 char* int_to_str(int num);
 char* unsigned_int_to_str(unsigned int num);
@@ -30,95 +26,130 @@ int number_len(const int number);
 char* exponent(double num, char type);
 char* significand(double num, char type);
 
+void d(int num, Type target, void* format);
+void u(unsigned int num, Type target, void* format);
+void f(float num, Type target, void* format);
+void lf(double num, Type target, void* format);
+void c(char c, Type target, void* format);
+void s(char* str, Type target, void* format);
+void o(int num, Type target, void* format);
+void x(int num, Type target, void* format);
+void X(int num, Type target, void* format);
 
-void d(int num);
-void u(unsigned int num);
-void f(float num);
-void lf(double num);
-void c(char c);
-void s(char* str);
-void o(int num);
-void x(int num);
-void X(int num);
-
-void Ro(int num);
-void Zr(unsigned int num);
-void Cv(int num, int base);
-void CV(int num, int base);
-void To(char* str, int base);
-void mi(int num);
-void mu(unsigned int num);
-void md(double num);
-void mf(float num);
+void Ro(int num, Type target, void* format);
+void Zr(unsigned int num, Type target, void* format);
+void Cv(int num, int base, Type target, void* format);
+void CV(int num, int base, Type target, void* format);
+void To(char* str, int base, Type target, void* format);
+void mi(int num, Type target, void* format);
+void mu(unsigned int num, Type target, void* format);
+void md(double num, Type target, void* format);
+void mf(float num, Type target, void* format);
 
 void where_print_c(char c, Type target, void* stream) {
     if (target == STDOUT) {
         fputc(c, stdout);
     }
     else if (target == FILES) {
-        fputc(c, (FILE*)stream);
+        if (stream) {
+            fputc(c, (FILE*)stream);
+        }
+    }
+    else if (target == STRING) {
+        if (stream) {
+            char** str_ptr = (char**)stream;
+            if (*str_ptr) {
+                int i = (*str_ptr)[0] - '0';
+                if (i < strlen(*str_ptr)) {
+                    (*str_ptr)[i] = c;
+                    (*str_ptr)[0] = (i + 1) + '0';
+                }
+            }
+        }
+    }
+}
+void where_print_s(char* str, Type target, void* stream) {
+    if (target == STDOUT) {
+        fputs(str, stdout);
+    }
+    else if (target == FILES) {
+        if (stream) {
+            fputs(str, (FILE*)stream);
+        }
+    }
+    else if (target == STRING) {
+        if (stream) {
+            char** str_ptr = (char**)stream;
+            if (*str_ptr) {
+                int i = (*str_ptr)[0] - '0';
+                int len = strlen(str);
+                if (i + len + 1 <= strlen(*str_ptr)) {
+                    memcpy((*str_ptr) + i, str, len);
+                    (*str_ptr)[i + len] = '\0';
+                    (*str_ptr)[0] = (i + len) + '0';
+                }
+            }
+        }
     }
 }
 
-void my_printf(Type target, void* stream, char* format, va_list args) 
-{
-
-    //здесь нужно определить что передаём и от этого делать 
-    //
+void my_printf(Type target, void* stream, char* format, va_list args) {
     char* str;
     int val;
     int val2;
     float fl;
+    int k = 0;
+    if (format == NULL) {
+        return;
+    }
 
     for (int i = 0; format[i] != '\0'; i++) {
         if (format[i] == '%') {
-            i++; // Переход к следующему символу после '%'
-            switch (format[i])
-            {
+            i++;
+            switch (format[i]) {
             case 'd': {
-                d(va_arg(args, int), target, format);
+                d(va_arg(args, int), target, stream);
                 break;
             }
             case 'u': {
-                u(va_arg(args, unsigned int), target, format);
+                u(va_arg(args, unsigned int), target, stream);
                 break;
             }
             case 'f': {
                 fl = (float)va_arg(args, double);
-                f(fl, target, format); // при va_arg(args, float) что-то странное происходит 
+                f(fl, target, stream);
                 break;
             }
             case 'l': {
                 if (format[i + 1] == 'f') {
-                    lf(va_arg(args, double), target, format);
+                    lf(va_arg(args, double), target, stream);
                     i++;
                 }
                 break;
             }
             case 'c': {
-                c(va_arg(args, char), target, format);
+                c(va_arg(args, int), target, stream);
                 break;
             }
             case 's': {
-                s(va_arg(args, char*), target, format);
+                s(va_arg(args, char*), target, stream);
                 break;
             }
             case 'o': {
-                o(va_arg(args, int), target, format);
+                o(va_arg(args, int), target, stream);
                 break;
             }
             case 'x': {
-                x(va_arg(args, int), target, format);
+                x(va_arg(args, int), target, stream);
                 break;
             }
             case 'X': {
-                X(va_arg(args, int), target, format);
-                i++;
+                X(va_arg(args, int), target, stream);
                 break;
             }
             case 'R': {
                 if (format[i + 1] == 'o') {
-                    Ro(va_arg(args, int), target, format);
+                    Ro(va_arg(args, int), target, stream);
                     i++;
                 }
                 break;
@@ -126,7 +157,7 @@ void my_printf(Type target, void* stream, char* format, va_list args)
             case 'Z': {
                 if (format[i + 1] == 'r') {
                     val = va_arg(args, unsigned int);
-                    Zr(val, target, format);
+                    Zr(val, target, stream);
                     i++;
                 }
                 break;
@@ -135,13 +166,13 @@ void my_printf(Type target, void* stream, char* format, va_list args)
                 if (format[i + 1] == 'v') {
                     val = va_arg(args, int);
                     val2 = va_arg(args, int);
-                    Cv(val, val2, target, format);
+                    Cv(val, val2, target, stream);
                     i++;
                 }
                 else if (format[i + 1] == 'V') {
                     val = va_arg(args, int);
                     val2 = va_arg(args, int);
-                    CV(val, val2, target, format);
+                    CV(val, val2, target, stream);
                     i++;
                 }
                 break;
@@ -150,7 +181,7 @@ void my_printf(Type target, void* stream, char* format, va_list args)
                 if (format[i + 1] == 'o') {
                     str = va_arg(args, char*);
                     val = va_arg(args, int);
-                    To(str, val, target, format);
+                    To(str, val, target, stream);
                     i++;
                 }
                 break;
@@ -159,121 +190,151 @@ void my_printf(Type target, void* stream, char* format, va_list args)
                 if (format[i + 1] == 'O') {
                     str = va_arg(args, char*);
                     val = va_arg(args, int);
-                    To(str, val, target, format);
+                    To(str, val, target, stream);
                     i++;
                 }
                 break;
             }
             case 'm': {
                 if (format[i + 1] == 'i') {
-                    mi(va_arg(args, int), target, format);
+                    mi(va_arg(args, int), target, stream);
                     i++;
                 }
                 else if (format[i + 1] == 'u') {
-                    mu(va_arg(args, int), target, format);
+                    mu(va_arg(args, int), target, stream);
                     i++;
                 }
                 else if (format[i + 1] == 'd') {
-                    md(va_arg(args, double), target, format);
+                    md(va_arg(args, double), target, stream);
                     i++;
                 }
                 else if (format[i + 1] == 'f') {
-                    fl = (float)va_arg(args, double); 
-                    mf(fl, target, format);
+                    fl = (float)va_arg(args, double);
+                    mf(fl, target, stream);
                     i++;
                 }
                 break;
             }
             default:
-                if (target == STRING) {
-                    *((char**)stream)[i + 1] = format[i];
-                }
-                else {
-                    where_print_c(format[i], target, stream);
-                } // Необработанный символ 
+                where_print_c(format[i], target, stream);
                 break;
             }
         }
-        else {
-            if (target == STRING) {
-                *((char**)stream)[i + 1] = format[i];
-            }
-            else {
-                where_print_c(format[i], target, stream);
-            }
+        else
+            where_print_c(format[i], target, stream);
     }
-    if (target == STRING) {
-        *((char**)stream)[i + 1] = format[i];
-    }else {
-        where_print_c(format[i], target, stream);
-    }
-    va_end(args);
+    where_print_c('\n', target, stream);
 }
 
-// вывод на экран
 void overprintf(const char* format, ...) {
-    va_list args;      
+    va_list args;
     va_start(args, format);
-    Type target = STDOUT;  
+    Type target = STDOUT;
     char* stream = NULL;
-    my_printf(target, stream, format, args);  
+    my_printf(target, stream, (char*)format, args);
     va_end(args);
 }
 
-
-// запись в файл
 void overfprintf(FILE* stream, const char* format, ...) {
     va_list args;
     va_start(args, format);
     Type target = FILES;
-    //нужнро открыть файл для записи мб или что??
-    my_printf(target, stream, format, args);
+    my_printf(target, stream, (char*)format, args);
     va_end(args);
-
 }
 
-// запись в строку
 int oversprintf(char** str, const char* format, ...) {
-    if (*str == NULL || **str == NULL) {
+    if (*str == NULL) {
         return -1;
     }
     int i = 0;
     va_list args;
     va_start(args, format);
     int len = strlen(*str);
-    char* stream = (char*)malloc(sizeof(char) * (strlen(*str) + 2)); //временная строка
+    char* stream = (char*)malloc(sizeof(char) * (len + 1024));
     if (stream == NULL) {
+        va_end(args);
         return -1;
     }
-    stream[0] = '0';//для определения количества записаных знаков
-    Type target = STRING;
+    stream[0] = '0';
+    stream[1] = '\0';
 
-    my_printf(target, &stream, format, args);
-    
-    memcpy(*str, stream + 1, (stream[0] - '0') +1);
+    Type target = STRING;
+    my_printf(target, &stream, (char*)format, args); 
+    i = stream[0] - '0';
+
+    if (i > len) {
+        memcpy(*str, stream + 1, len);
+        (*str)[len] = '\0';
+    }
+    else {
+        memcpy(*str, stream + 1, i);
+        (*str)[i] = '\0';
+    }
+    free(stream);
     va_end(args);
-    i = *stream; 
-    free(stream); 
-    return i; // Возвращаем количество записанных символов 
+    return i;
 }
 
 
 
 
 int main() {
-    my_printf("Examples of how the my_printf works:\n for int: %d\n for unsigned int: %u\n for char: %c\n for string: %s\n for octal: %o\n for hexademical: %x\n for Hexademical: %08X", 10, 20, 'A', "Hello", 10, 15, 15);
-    my_printf(" for float: %f\n for double : %lf", (float)12.11, -5.564);
-    my_printf(" for Roman:%Ro, %Ro\n for the Zenkendorf representation: %d - %Zr, %d - %Zr", 999, 123, 10, 10, 289, 289); 
-    my_printf(" for number to base: %Cv, %Cv\n for Number to base: %CV, %CV\n for decimal representation: %to\n for decimal representation: %TO", 15, 30, 134, 16, 15, 30, 134, 16, "abf", 17, "ABF", 17); 
-    my_printf(" for int in memory: %mi\n for unsigned int in memory: %mu\n for double in memory: %md, %md\n for float in memory: %mf, %mf", -546, 546, -0.342, 345.78, (float)1.2, (float)21.3); 
+    char* dtr = (char*)malloc(sizeof(char) * 100);
+    if (dtr == NULL)
+    {
+        //обработка ошибки
+        return 1;
+    }
+    dtr[0] = '\0';
+    char* fli = "djid";  
+    overprintf("Examples of how the my_printf works:\n for int: %d\n for unsigned int: %u\n for char: %c\n for string: %s\n for octal: %o\n for hexademical: %x\n for Hexademical: %X", 10, 20, 'A', "Hello", 10, 15, 15);
+    overprintf(" for float: %f\n for double : %lf", (float)12.11, -5.564);
+    oversprintf(&dtr, "%s", fli); 
+    overprintf("%s", dtr);  
+    overprintf(" for Roman:%Ro, %Ro\n for the Zenkendorf representation: %d - %Zr, %d - %Zr", 999, 123, 10, 10, 289, 289);
+    overprintf(" for number to base: %Cv, %Cv\n for Number to base: %CV, %CV\n for decimal representation: %to\n for decimal representation: %TO", 15, 30, 134, 16, 15, 30, 134, 16, "abf", 17, "ABF", 17);
+    overprintf(" for int in memory: %mi\n for unsigned int in memory: %mu\n for double in memory: %md, %md\n for float in memory: %mf, %mf", -546, 546, -0.342, 345.78, (float)1.2, (float)21.3);
 
+    // Демонстрация overprintf
+    overprintf("This is a test of overprintf: %d, %s", 123, "hello");
+
+    // Демонстрация overfprintf
+    FILE* test_file = fopen("test.txt", "w");
+    if (test_file != NULL) {
+        overfprintf(test_file, "This is a test of overfprintf: %f, %c", 3.14, 'X');
+        fclose(test_file);
+        printf("Check 'test.txt' for output of overfprintf.\n");
+    }
+    else {
+        printf("Error creating 'test.txt'\n");
+    }
+
+
+    // Демонстрация oversprintf
+    char* buffer = (char*)malloc(sizeof(char) * 50);
+    if (buffer == NULL) {
+        return 1;
+    }
+    buffer[0] = '\0';
+
+    int chars_written = oversprintf(&buffer, "This is a test of oversprintf: %d, %s", 456, "world");
+    if (chars_written != -1) {
+        printf("Output of oversprintf: %s, chars_written: %d\n", buffer, chars_written);
+    }
+    else {
+        printf("Error with oversprintf\n");
+    }
+
+
+    free(dtr);
+    free(buffer);
     return 0;
 }
 
-
 char* int_to_str(int num) {
     char* str = (char*)malloc(20 * sizeof(char));
-    if (str == NULL) return NULL; // Проверка на ошибку выделения памяти
+    if (str == NULL) return NULL;
 
     int is_negative = 0;
     if (num < 0) {
@@ -284,7 +345,7 @@ char* int_to_str(int num) {
     int i = 0;
     do {
         int digit = num % 10;
-        str[i++] = digit + '0'; // Только десятичные цифры
+        str[i++] = digit + '0';
         num /= 10;
     } while (num != 0);
 
@@ -294,7 +355,6 @@ char* int_to_str(int num) {
 
     str[i] = '\0';
 
-    // Инвертируем строку
     int start = 0;
     int end = i - 1;
     while (start < end) {
@@ -309,19 +369,17 @@ char* int_to_str(int num) {
 char* unsigned_int_to_str(unsigned int num)
 {
     char* str = (char*)malloc(20 * sizeof(char));
-    if (str == NULL) return NULL; // Проверка на ошибку выделения памяти
-
+    if (str == NULL) return NULL;
 
     int i = 0;
     do {
         int digit = num % 10;
-        str[i++] = digit + '0'; // Только десятичные цифры
+        str[i++] = digit + '0';
         num /= 10;
     } while (num != 0);
 
     str[i] = '\0';
 
-    // Инвертируем строку
     int start = 0;
     int end = i - 1;
     while (start < end) {
@@ -447,7 +505,7 @@ char* double_to_str(double num)
     char* str = (char*)malloc(size);
     if (str == NULL) return NULL;
 
-    char* int_our = (char*)malloc(sizeof(char) * 192); // массив под целую часть 
+    char* int_our = (char*)malloc(sizeof(char) * 192); // массив под целую часть
     char* float_our = (char*)malloc(sizeof(char) * 57); // массив под дробную часть
 
     if (int_our == NULL || float_our == NULL) {
@@ -459,7 +517,6 @@ char* double_to_str(double num)
     int int_part = (int)num;
     float float_part = num - int_part;
 
-    // Обработка знака
     if (int_part < 0) {
         negative = 1;
         int_part = -int_part;
@@ -493,7 +550,6 @@ char* double_to_str(double num)
     }
     float_our[k] = '\0';
 
-    // Проверка на необходимость увеличения памяти
     size_t nado = i + k + 3 + (negative ? 1 : 0); // +3 для точки, знака и \0
     if (size < nado) {
         char* buffer = (char*)realloc(str, nado);
@@ -506,28 +562,22 @@ char* double_to_str(double num)
         str = buffer;
     }
 
-    // Заполняем строку результатом
     int b = 0;
     if (negative) {
         str[b++] = '-';
     }
 
-    // Копируем целую часть
     for (int j = 0; j < i; j++) {
         str[b++] = int_our[j];
     }
 
-    // Добавляем точку
     str[b++] = '.';
 
-    // Копируем дробную часть
     for (int j = 0; j < k; j++) {
         str[b++] = float_our[j];
     }
 
-    str[b] = '\0'; // Завершаем строку
-
-    // Освобождаем память
+    str[b] = '\0';
     free(int_our);
     free(float_our);
 
@@ -536,6 +586,7 @@ char* double_to_str(double num)
 
 char* num_to_base(int num, int base) {
     char* str = (char*)malloc(sizeof(char) * 25);
+    if (str == NULL) return OSHIBKA;
     int i = 0;
     if (base == 8) {
         while (num > 0) {
@@ -582,6 +633,7 @@ char* num_to_base(int num, int base) {
     }
     return str;
 }
+
 char* Roman(int num) {
     char* roman[] = { "I", "IV", "V", "IX", "X", "XL", "L", "XC", "C", "CD", "D", "CM", "M" };
     int values[] = { 1, 4, 5, 9, 10, 40, 50, 90, 100, 400, 500, 900, 1000 };
@@ -642,7 +694,8 @@ char** Z(unsigned int num) {
 }
 
 char* convert_base(int num, int base, char size) {
-    char* buffer = (char*)malloc(65 * sizeof(char));  // Достаточно для 64 цифр + '\0' 
+    char* buffer = (char*)malloc(65 * sizeof(char));  // Достаточно для 64 цифр + '\0'
+    if (buffer == NULL) return OSHIBKA;
     char digitsS[] = "0123456789abcdefghijklmnopqrstuvwxyz";
     char digitsB[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
     int i = 0;
@@ -662,15 +715,11 @@ char* convert_base(int num, int base, char size) {
     }
     int is_negative = 0;
 
-    if (buffer == NULL) {
-        return OSHIBKA;
-    }
-
     if (num < 0 && base == 10) {
         is_negative = 1;
         num = -num;
     }
-    // Преобразуем число в строку
+
     if (num == 0) {
         buffer[i++] = '0';
     }
@@ -696,7 +745,10 @@ char* convert_base(int num, int base, char size) {
     }
     return buffer;
 }
+
 char* str_to_base(char* str, int base) {
+    if (str == NULL)
+        return NULL;
     int result = 0;
     int power = 1;
     int pr_value = 0;
@@ -902,84 +954,84 @@ char* significand(double num, char type) {
 }
 
 
-void d(int num)
+void d(int num, Type target, void* format)
 {
     char* num_str = int_to_str(num);
     if (num_str == NULL) {
         return;
     }
-    fputs(num_str, stdout);
+    where_print_s(num_str, target, format);
     free(num_str);
 }
-void u(unsigned int num)
+void u(unsigned int num, Type target, void* format)
 {
     char* num_str = unsigned_int_to_str(num);
     if (num_str == NULL) {
         return;
     }
-    fputs(num_str, stdout);
+    where_print_s(num_str, target, format);
     free(num_str);
 }
-void f(float num) {
+void f(float num, Type target, void* format) {
     char* num_str = float_to_str(num);
     if (num_str == OSHIBKA) {
         return;
     }
-    fputs(num_str, stdout);
+    where_print_s(num_str, target, format);
     free(num_str);
 }
-void lf(double num) {
+void lf(double num, Type target, void* format) {
     char* num_str = double_to_str(num);
     if (num_str == NULL) {
         free(num_str);
         return;
     }
-    fputs(num_str, stdout);
+    where_print_s(num_str, target, format);
     free(num_str);
 }
-void c(char c) {
-    fputc(c, stdout);
+void c(char c, Type target, void* format) {
+    where_print_c(c, target, format);
 }
-void s(char* str) {
-    fputs(str, stdout);
+void s(char* str, Type target, void* format) {
+    where_print_s(str, target, format);
 }
-void o(int num) {
+void o(int num, Type target, void* format) {
     char* num_str = num_to_base(num, 8);
     if (num_str == NULL) {
         free(num_str);
         return;
     }
-    fputs(num_str, stdout);
+    where_print_s(num_str, target, format);
     free(num_str);
 }
-void x(int num) {
+void x(int num, Type target, void* format) {
     char* num_str = num_to_base(num, 16);
     if (num_str == NULL) {
         free(num_str);
         return;
     }
-    fputs(num_str, stdout);
+    where_print_s(num_str, target, format);
     free(num_str);
 }
-void X(int num) {
+void X(int num, Type target, void* format) {
     char* num_str = num_to_base(num, 160);
     if (num_str == NULL) {
         free(num_str);
         return;
     }
-    fputs(num_str, stdout);
+    where_print_s(num_str, target, format);
     free(num_str);
 }
-void Ro(int num) {
+void Ro(int num, Type target, void* format) {
     char* num_str = Roman(num);
     if (num_str == NULL) {
         free(num_str);
         return;
     }
-    fputs(num_str, stdout);
+    where_print_s(num_str, target, format);
     free(num_str);
 }
-void Zr(unsigned int num) {
+void Zr(unsigned int num, Type target, void* format) {
     char** num_str = Z(num);
     if (num_str == NULL) {
         return;
@@ -987,8 +1039,8 @@ void Zr(unsigned int num) {
     int k = 1;
     while (num_str[k] != NULL) {
 
-        fputs(num_str[k], stdout);
-        fputc(' ', stdout);
+        where_print_s(num_str[k], target, format);
+        where_print_c(' ', target, format);
         free(num_str[k]);
         k++;
     }
@@ -999,36 +1051,36 @@ void Zr(unsigned int num) {
 
 // int Cv(int num, int base, enum target (file stream / string stream), void *stream (FILE * - for file, char ** - for string) 
 
-void Cv(int num, int base) {
+void Cv(int num, int base, Type target, void* format) {
 
     if (base < 2 || base > 36) {
         base = 10;  // Если основание некорректное, используем десятичное
     }
 
     char* str = convert_base(num, base, 'S');
-    fputs(str, stdout);
+    where_print_s(str, target, format);
     free(str);
 }
-void CV(int num, int base) {
+void CV(int num, int base, Type target, void* format) {
     if (base < 2 || base > 36) {
         base = 10;  // Если основание некорректное, используем десятичное
     }
 
     char* str = convert_base(num, base, 'B');
     if (str == NULL) return;
-    fputs(str, stdout);
+    where_print_s(str, target, format);
     free(str);
 }
-void To(char* str, int base) {
+void To(char* str, int base, Type target, void* format) {
     char* num_str = str_to_base(str, base);
     if (num_str == NULL) {
         free(num_str);
         return;
     }
-    fputs(num_str, stdout);
+    where_print_s(num_str, target, format);
     free(num_str);
 }
-void mi(int num) {
+void mi(int num, Type target, void* format) {
     int type = 0;
     if (num < 0) {
         type = 1;
@@ -1039,15 +1091,15 @@ void mi(int num) {
         printf("nonono");
         return;
     }
-    fputs(num_str, stdout);
+    where_print_s(num_str, target, format);
     free(num_str);
 }
-void mu(unsigned int num) {
+void mu(unsigned int num, Type target, void* format) {
     char* num_str = iu_to_dumb(num, 0);
     if (num_str == NULL) {
         return;
     }
-    fputs(num_str, stdout);
+    where_print_s(num_str, target, format);
     free(num_str);
 }
 /*
@@ -1057,7 +1109,7 @@ void mu(unsigned int num) {
     m = 2^кол-во бит под экспоненту  - 1 (для f = 127, d = 1023)
     3. мантисса:
     */
-void md(double num) {
+void md(double num, Type target, void* format) {
     char sign = (num < 0) ? '1' : '0';
     char* exp = exponent(num, 'd');
     char* mn = significand(num, 'd');
@@ -1115,16 +1167,14 @@ void md(double num) {
     }
     result[i] = '\0';
 
-
-    fputs(result, stdout);
-
+    where_print_s(result, target, format);
 
     free(exp);
     free(mn);
     free(result);
 }
 
-void mf(float num) {
+void mf(float num, Type target, void* format) {
     char sign = (num < 0) ? '1' : '0';
     char* exp = exponent((double)num, 'f');
     char* mn = significand((double)num, 'f');
@@ -1182,7 +1232,7 @@ void mf(float num) {
     }
     result[i] = '\0';
 
-    fputs(result, stdout);
+    where_print_s(result, target, format);
 
     free(exp);
     free(mn);
